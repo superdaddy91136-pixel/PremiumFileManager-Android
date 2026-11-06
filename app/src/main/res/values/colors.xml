@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="matte_obsidian">#FF090B10</color>
+    <color name="charcoal_surface">#FF121620</color>
+    <color name="deep_indigo">#FF4F46E5</color>
+    <color name="ocean_blue">#FF0EA5E9</color>
+    <color name="ic_launcher_background">#FF0D111A</color>
+</resources>

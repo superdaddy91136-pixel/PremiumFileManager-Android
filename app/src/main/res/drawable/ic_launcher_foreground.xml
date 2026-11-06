@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Back folder plate -->
+    <path
+        android:fillColor="#4F46E5"
+        android:pathData="M26,34 C26,30.686 28.686,28 32,28 L46,28 L52,34 L76,34 C79.314,34 82,36.686 82,40 L82,72 C82,75.314 79.314,78 76,78 L32,78 C28.686,78 26,75.314 26,72 Z" />
+    <!-- Frosted glass front card -->
+    <path
+        android:fillColor="#0EA5E9"
+        android:fillAlpha="0.85"
+        android:pathData="M24,44 C24,40.686 26.686,38 30,38 L78,38 C81.314,38 84,40.686 84,44 L84,74 C84,77.314 81.314,80 78,80 L30,80 C26.686,80 24,77.314 24,74 Z" />
+    <!-- Top glass highlight line -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.45"
+        android:pathData="M30,41 L78,41 C79.657,41 81,42.343 81,44 L81,45 L27,45 L27,44 C27,42.343 28.343,41 30,41 Z" />
+</vector>

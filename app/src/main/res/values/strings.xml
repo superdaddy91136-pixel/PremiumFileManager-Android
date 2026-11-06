@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Files</string>
+    <string name="tagline">Privacy-First Glass File Manager</string>
+    <string name="tab_recents">Recents</string>
+    <string name="tab_storage">Storage</string>
+    <string name="search_placeholder">Search filenames, extensions, or artist…</string>
+    <string name="permission_title">Storage Access Required</string>
+    <string name="permission_rationale">Files works 100% offline on your device. Grant storage access to browse folders, preview media, manage archives, and organize your files without ads or tracking.</string>
+    <string name="grant_all_files">Grant All Files Access</string>
+    <string name="grant_media_only">Grant Media Access Only</string>
+    <string name="privacy_pledge">Zero Ads • Zero Network Permissions • 100% On-Device</string>
+</resources>
