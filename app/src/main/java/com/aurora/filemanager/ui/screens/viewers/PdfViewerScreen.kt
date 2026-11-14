@@ -1,6 +1,8 @@
 package com.aurora.filemanager.ui.screens.viewers
 
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.os.ParcelFileDescriptor
@@ -82,7 +84,6 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 import java.io.File
-import android.content.Context
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -122,8 +123,18 @@ fun PdfViewerScreen(
     var isFullScreen by remember { mutableStateOf(false) }
     var chromeVisible by remember { mutableStateOf(true) }
 
+    DisposableEffect(view) {
+        val window = view.context.findActivity()?.window
+        onDispose {
+            if (window != null) {
+                val controller = WindowInsetsControllerCompat(window, view)
+                controller.show(WindowInsetsCompat.Type.systemBars())
+            }
+        }
+    }
+
     LaunchedEffect(isFullScreen) {
-        val window = (view.context as? Activity)?.window
+        val window = view.context.findActivity()?.window
         if (window != null) {
             val controller = WindowInsetsControllerCompat(window, view)
             if (isFullScreen) {
@@ -587,4 +598,13 @@ private class PdfProgressManager(context: Context) {
         val str = map.entries.joinToString(";") { "${it.key}=${it.value}" }
         prefs.edit().putString("progress_map", str).apply()
     }
+}
+
+private fun Context.findActivity(): Activity? {
+    var ctx = this
+    while (ctx is ContextWrapper) {
+        if (ctx is Activity) return ctx
+        ctx = ctx.baseContext
+    }
+    return null
 }

@@ -146,7 +146,11 @@ class FileManagerViewModel(application: Application) : AndroidViewModel(applicat
     private val prefsRepo = auroraApp.preferencesRepository
 
     val preferencesFlow: StateFlow<UserPreferences> = prefsRepo.preferencesFlow
-        .stateIn(viewModelScope, SharingStarted.Eagerly, UserPreferences())
+        .stateIn(
+            viewModelScope, 
+            SharingStarted.Eagerly, 
+            runCatching { kotlinx.coroutines.runBlocking { prefsRepo.preferencesFlow.first() } }.getOrDefault(UserPreferences())
+        )
 
     val favoritesFlow: StateFlow<List<FavoriteEntity>> = repository.favoritesFlow
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
@@ -195,9 +199,7 @@ class FileManagerViewModel(application: Application) : AndroidViewModel(applicat
             storageRootPath = repository.getPrimaryStorageRoot().absolutePath,
             currentStorageDir = repository.getPrimaryStorageRoot(),
             directoryStack = listOf(repository.getPrimaryStorageRoot()),
-            currentSection = runCatching {
-                runBlocking { prefsRepo.preferencesFlow.first() }.lastSelectedSection
-            }.getOrDefault(HomeSection.RECENTS)
+            currentSection = preferencesFlow.value.lastSelectedSection
         )
     )
     val uiState: StateFlow<FileManagerUiState> = _uiState.asStateFlow()
@@ -964,6 +966,10 @@ class FileManagerViewModel(application: Application) : AndroidViewModel(applicat
 
     fun setThemeMode(mode: ThemeMode) {
         viewModelScope.launch { prefsRepo.setThemeMode(mode) }
+    }
+
+    fun setAmoledMode(enabled: Boolean) {
+        viewModelScope.launch { prefsRepo.setAmoledMode(enabled) }
     }
 
     fun selectAllVisible() {

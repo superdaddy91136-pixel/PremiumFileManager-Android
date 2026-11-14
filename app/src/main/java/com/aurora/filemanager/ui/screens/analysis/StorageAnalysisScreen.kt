@@ -44,10 +44,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.lazy.rememberLazyListState
 import com.aurora.filemanager.data.model.FileItem
 import com.aurora.filemanager.ui.components.AuroraAmbientBackground
 import com.aurora.filemanager.ui.components.GlassFilterChip
 import com.aurora.filemanager.ui.components.GlassSurface
+import com.aurora.filemanager.ui.components.LazyListScrollbarPill
 import com.aurora.filemanager.ui.components.categoryAccentColor
 import com.aurora.filemanager.ui.theme.AuroraPalette
 import com.aurora.filemanager.ui.theme.AuroraRadius
@@ -141,11 +143,14 @@ fun StorageAnalysisScreen(
                 return@Column
             }
 
-            LazyColumn(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
+            val analysisListState = rememberLazyListState()
+            Box(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    state = analysisListState,
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
                 // Storage Summary Card
                 item {
                     GlassSurface(
@@ -432,8 +437,10 @@ fun StorageAnalysisScreen(
                     }
                 }
             }
+            LazyListScrollbarPill(listState = analysisListState)
         }
     }
+}
 }
 
 @Composable

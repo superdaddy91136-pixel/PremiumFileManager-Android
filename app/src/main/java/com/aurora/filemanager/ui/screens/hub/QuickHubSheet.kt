@@ -40,7 +40,11 @@ import androidx.compose.ui.unit.dp
 import com.aurora.filemanager.data.local.FavoriteEntity
 import com.aurora.filemanager.data.local.OperationHistoryEntity
 import com.aurora.filemanager.data.local.RecentOpenedEntity
+import com.aurora.filemanager.data.model.FileCategory
 import com.aurora.filemanager.data.model.FileItem
+import com.aurora.filemanager.data.model.FileTimestamps
+import com.aurora.filemanager.data.model.TimestampKind
+import com.aurora.filemanager.ui.components.FileThumbnailBox
 import com.aurora.filemanager.ui.components.GlassFilterChip
 import com.aurora.filemanager.ui.components.GlassModalBottomSheet
 import com.aurora.filemanager.ui.components.itemCard3DStyle
@@ -149,6 +153,29 @@ fun QuickHubBottomSheet(
                             }
                         } else {
                             items(validFavorites, key = { it.path }) { fav ->
+                                val favItem = remember(fav.path) {
+                                    val file = File(fav.path)
+                                    val isDir = fav.isDirectory || file.isDirectory
+                                    val ext = fav.name.substringAfterLast('.', "").lowercase()
+                                    val cat = FileCategory.fromFile(isDir, ext, null)
+                                    FileItem(
+                                        id = fav.path,
+                                        path = fav.path,
+                                        contentUri = null,
+                                        name = fav.name,
+                                        extension = ext,
+                                        sizeBytes = if (file.exists() && !isDir) file.length() else 0L,
+                                        isDirectory = isDir,
+                                        category = cat,
+                                        mimeType = "*/*",
+                                        timestamps = FileTimestamps(
+                                            primaryAddedOrDiscoveredMillis = fav.addedAtMillis,
+                                            primaryAddedSource = TimestampKind.LAST_MODIFIED_FALLBACK,
+                                            creationTimeMillis = null,
+                                            lastModifiedMillis = if (file.exists()) file.lastModified() else fav.addedAtMillis
+                                        )
+                                    )
+                                }
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -160,11 +187,7 @@ fun QuickHubBottomSheet(
                                         .padding(horizontal = 12.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        imageVector = if (fav.isDirectory) Icons.Outlined.Folder else Icons.Outlined.InsertDriveFile,
-                                        contentDescription = null,
-                                        tint = if (fav.isDirectory) AuroraPalette.CategoryFolder else AuroraPalette.OceanBlue
-                                    )
+                                    FileThumbnailBox(item = favItem, enableThumbnails = true, size = 42.dp)
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
@@ -206,6 +229,28 @@ fun QuickHubBottomSheet(
                             }
                         } else {
                             items(validRecentOpened, key = { it.path }) { entry ->
+                                val entryItem = remember(entry.path) {
+                                    val file = File(entry.path)
+                                    val ext = entry.name.substringAfterLast('.', "").lowercase()
+                                    val cat = FileCategory.fromFile(false, ext, null)
+                                    FileItem(
+                                        id = entry.path,
+                                        path = entry.path,
+                                        contentUri = null,
+                                        name = entry.name,
+                                        extension = ext,
+                                        sizeBytes = entry.sizeBytes,
+                                        isDirectory = false,
+                                        category = cat,
+                                        mimeType = "*/*",
+                                        timestamps = FileTimestamps(
+                                            primaryAddedOrDiscoveredMillis = entry.openedAtMillis,
+                                            primaryAddedSource = TimestampKind.LAST_OPENED,
+                                            creationTimeMillis = null,
+                                            lastModifiedMillis = if (file.exists()) file.lastModified() else entry.openedAtMillis
+                                        )
+                                    )
+                                }
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -217,11 +262,7 @@ fun QuickHubBottomSheet(
                                         .padding(horizontal = 12.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Visibility,
-                                        contentDescription = null,
-                                        tint = AuroraPalette.OceanBlue
-                                    )
+                                    FileThumbnailBox(item = entryItem, enableThumbnails = true, size = 42.dp)
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(

@@ -37,6 +37,7 @@ data class UserPreferences(
     val showFileExtensions: Boolean = true,
     val showHiddenFiles: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.DARK,
+    val amoledMode: Boolean = false,
     val enableThumbnails: Boolean = true,
     val resumeMediaPlayback: Boolean = true,
     val backgroundAudioPlayback: Boolean = false,
@@ -60,6 +61,7 @@ class UserPreferencesRepository(private val context: Context) {
         val SHOW_EXTENSIONS = booleanPreferencesKey("show_file_extensions")
         val SHOW_HIDDEN = booleanPreferencesKey("show_hidden_files")
         val THEME_MODE = stringPreferencesKey("theme_mode")
+        val AMOLED_MODE = booleanPreferencesKey("amoled_mode")
         val ENABLE_THUMBNAILS = booleanPreferencesKey("enable_thumbnails")
         val RESUME_PLAYBACK = booleanPreferencesKey("resume_media_playback")
         val BACKGROUND_AUDIO = booleanPreferencesKey("background_audio_playback")
@@ -120,6 +122,7 @@ class UserPreferencesRepository(private val context: Context) {
                 themeMode = runCatching {
                     ThemeMode.valueOf(prefs[Keys.THEME_MODE] ?: ThemeMode.DARK.name)
                 }.getOrDefault(ThemeMode.DARK),
+                amoledMode = prefs[Keys.AMOLED_MODE] ?: false,
                 enableThumbnails = prefs[Keys.ENABLE_THUMBNAILS] ?: true,
                 resumeMediaPlayback = prefs[Keys.RESUME_PLAYBACK] ?: true,
                 backgroundAudioPlayback = prefs[Keys.BACKGROUND_AUDIO] ?: false,
@@ -190,6 +193,10 @@ class UserPreferencesRepository(private val context: Context) {
 
     suspend fun setThemeMode(mode: ThemeMode) {
         context.dataStore.edit { prefs -> prefs[Keys.THEME_MODE] = mode.name }
+    }
+
+    suspend fun setAmoledMode(enabled: Boolean) {
+        context.dataStore.edit { prefs -> prefs[Keys.AMOLED_MODE] = enabled }
     }
 
     suspend fun setEnableThumbnails(enabled: Boolean) {

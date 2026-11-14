@@ -2,6 +2,8 @@ package com.aurora.filemanager.ui.screens.viewers
 
 import android.app.Activity
 import android.app.PictureInPictureParams
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
@@ -197,10 +199,20 @@ fun VideoPlayerScreen(
         }
     }
 
-    // Full-screen immersive mode handling
+    // Full-screen immersive mode handling & guaranteed system bar restoration on exit
     val view = LocalView.current
+    DisposableEffect(view) {
+        val window = view.context.findActivity()?.window
+        onDispose {
+            if (window != null) {
+                val controller = WindowInsetsControllerCompat(window, view)
+                controller.show(WindowInsetsCompat.Type.systemBars())
+            }
+        }
+    }
+
     LaunchedEffect(controlsVisible) {
-        val window = (view.context as? Activity)?.window
+        val window = view.context.findActivity()?.window
         if (window != null) {
             val controller = WindowInsetsControllerCompat(window, view)
             if (controlsVisible) {
@@ -580,4 +592,13 @@ fun VideoPlayerScreen(
             }
         }
     }
+}
+
+private fun Context.findActivity(): Activity? {
+    var ctx = this
+    while (ctx is ContextWrapper) {
+        if (ctx is Activity) return ctx
+        ctx = ctx.baseContext
+    }
+    return null
 }

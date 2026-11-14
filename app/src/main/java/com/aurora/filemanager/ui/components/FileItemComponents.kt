@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -80,6 +81,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.vectorResource
+import com.aurora.filemanager.R
 import com.aurora.filemanager.data.model.FileCategory
 import com.aurora.filemanager.data.model.FileItem
 import com.aurora.filemanager.ui.theme.AuroraPalette
@@ -88,18 +91,22 @@ import com.aurora.filemanager.ui.theme.AuroraTheme
 import com.aurora.filemanager.util.QuickCardBadgeInfo
 import com.aurora.filemanager.util.ThumbnailAndMetadataManager
 
-fun categoryIcon(category: FileCategory): ImageVector = when (category) {
-    FileCategory.FOLDER -> Icons.Outlined.Folder
-    FileCategory.IMAGE -> Icons.Outlined.Image
-    FileCategory.VIDEO -> Icons.Outlined.VideoFile
-    FileCategory.AUDIO -> Icons.Outlined.AudioFile
-    FileCategory.PDF -> Icons.Outlined.PictureAsPdf
+@Composable
+fun fileTypeOutlineIcon(category: FileCategory): ImageVector = when (category) {
+    FileCategory.IMAGE -> ImageVector.vectorResource(R.drawable.ic_type_image)
+    FileCategory.PDF -> ImageVector.vectorResource(R.drawable.ic_type_pdf)
+    FileCategory.VIDEO -> ImageVector.vectorResource(R.drawable.ic_type_video)
+    FileCategory.AUDIO -> ImageVector.vectorResource(R.drawable.ic_type_audio)
     FileCategory.DOCUMENT -> Icons.Outlined.Description
     FileCategory.ARCHIVE -> Icons.Outlined.FolderZip
     FileCategory.APK -> Icons.Outlined.Android
     FileCategory.CODE -> Icons.Outlined.Code
     FileCategory.OTHER -> Icons.Outlined.InsertDriveFile
+    FileCategory.FOLDER -> Icons.Outlined.Folder
 }
+
+@Composable
+fun categoryIcon(category: FileCategory): ImageVector = fileTypeOutlineIcon(category)
 
 fun categoryAccentColor(category: FileCategory): Color = when (category) {
     FileCategory.FOLDER -> AuroraPalette.CategoryFolder
@@ -112,6 +119,103 @@ fun categoryAccentColor(category: FileCategory): Color = when (category) {
     FileCategory.APK -> AuroraPalette.CategoryApk
     FileCategory.CODE -> AuroraPalette.CategoryCode
     FileCategory.OTHER -> AuroraPalette.OceanBlue
+}
+
+/**
+ * Tasteful category-specific colors for floating file-type indicators:
+ * - Images: lavender
+ * - Videos: white or blue
+ * - Audio: pink or magenta
+ * - APK: Android green
+ * - PDF: soft red
+ * - Documents: light blue
+ * - Archives: amber
+ * - Code: teal
+ * - Unknown files: neutral grey
+ */
+fun fileTypeColor(category: FileCategory): Color = when (category) {
+    FileCategory.IMAGE -> Color(0xFFFFD600)    // Bright Yellow
+    FileCategory.VIDEO -> Color(0xFF38BDF8)    // Bright Blue
+    FileCategory.AUDIO -> Color(0xFFFF1493)    // Bright Deep Pink
+    FileCategory.PDF -> Color.Unspecified      // Use original SVG colors
+    FileCategory.APK -> Color(0xFF4ADE80)      // Android Green
+    FileCategory.DOCUMENT -> Color(0xFF00E5FF) // Light Blue
+    FileCategory.ARCHIVE -> Color(0xFFFFB300)  // Amber
+    FileCategory.CODE -> Color(0xFF2DD4BF)     // Teal
+    FileCategory.OTHER -> Color(0xFFD1D5DB)    // Neutral Grey
+    FileCategory.FOLDER -> AuroraPalette.CategoryFolder
+}
+
+/**
+ * Modern, minimal, icon-only file-type indicator floating directly over the bottom-right corner of file thumbnails.
+ * Has no surrounding box, badge, circle, pill, or background container.
+ * Features boldened outline strokes with soft ambient drop-shadows for high-definition contrast on any background.
+ */
+@Composable
+fun FloatingFileTypeIndicator(
+    category: FileCategory,
+    size: Dp,
+    modifier: Modifier = Modifier
+) {
+    val icon = fileTypeOutlineIcon(category)
+    val color = fileTypeColor(category)
+
+    Box(
+        modifier = modifier.padding(bottom = 3.dp, end = 3.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        // 1. Soft subtle ambient shadow for floating depth
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Color.Black.copy(alpha = 0.50f),
+            modifier = Modifier
+                .offset(x = 1.5.dp, y = 1.5.dp)
+                .size(size)
+        )
+
+        // 2. High-contrast dark outline contour for crisp legibility over bright backgrounds
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Color.Black.copy(alpha = 0.85f),
+            modifier = Modifier
+                .offset(x = 0.75.dp, y = 0.75.dp)
+                .size(size)
+        )
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Color.Black.copy(alpha = 0.60f),
+            modifier = Modifier
+                .offset(x = (-0.5).dp, y = (-0.5).dp)
+                .size(size)
+        )
+
+        // 3. Boldened multi-pass primary icon for thicker, stronger outline stroke weight
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier
+                .offset(x = 0.25.dp, y = 0.dp)
+                .size(size)
+        )
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier
+                .offset(x = (-0.25).dp, y = 0.dp)
+                .size(size)
+        )
+        Icon(
+            imageVector = icon,
+            contentDescription = category.displayName,
+            tint = color,
+            modifier = Modifier.size(size)
+        )
+    }
 }
 
 /**
@@ -211,6 +315,16 @@ fun FileThumbnailBox(
         }
     }
 
+    // Adaptive icon size based on thumbnail dimensions (25% smaller):
+    // - Grid mode (size >= 80.dp): 17dp
+    // - List mode (size <= 52.dp): 12dp
+    // - Other layouts: scale proportionally
+    val indicatorSize = when {
+        size >= 80.dp -> 17.dp
+        size <= 52.dp -> 12.dp
+        else -> (size * 0.26f).coerceIn(12.dp, 17.dp)
+    }
+
     Box(
         modifier = modifier
             .size(size)
@@ -230,22 +344,6 @@ fun FileThumbnailBox(
                 },
                 modifier = Modifier.fillMaxSize()
             )
-            if (item.category == FileCategory.VIDEO) {
-                Box(
-                    modifier = Modifier
-                        .size(22.dp)
-                        .clip(CircleShape)
-                        .background(Color.Black.copy(alpha = 0.65f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.PlayArrow,
-                        contentDescription = "Play video",
-                        tint = Color.White,
-                        modifier = Modifier.size(15.dp)
-                    )
-                }
-            }
         } else {
             Icon(
                 imageVector = if (item.isRestrictedSystemFolder) Icons.Outlined.Lock else categoryIcon(item.category),
@@ -255,22 +353,13 @@ fun FileThumbnailBox(
             )
         }
 
-        // Extension pill badge for documents/archives/other when no bitmap preview is shown
-        if (!cleanerLook && currentBitmap == null && !item.isDirectory && item.extension.isNotEmpty()) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(2.dp)
-                    .clip(AuroraRadius.ExtraSmall)
-                    .background(accent.copy(alpha = 0.88f))
-                    .padding(horizontal = 3.dp, vertical = 1.dp)
-            ) {
-                Text(
-                    text = item.extension.uppercase().take(4),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.White
-                )
-            }
+        // Floating file-type indicator for non-directory files
+        if (!item.isDirectory) {
+            FloatingFileTypeIndicator(
+                category = item.category,
+                size = indicatorSize,
+                modifier = Modifier.align(Alignment.BottomEnd)
+            )
         }
 
         // Top-left overlay badge (e.g. for Recycle Bin expiry days)
@@ -635,13 +724,13 @@ fun FileGridCard(
                     onLongClick()
                 }
             )
-            .padding(10.dp)
+            .padding(start = 6.dp, top = 6.dp, end = 6.dp, bottom = 8.dp)
             .semantics { contentDescription = item.name }
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(1.15f),
+                .aspectRatio(1.22f),
             contentAlignment = Alignment.Center
         ) {
             FileThumbnailBox(

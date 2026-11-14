@@ -142,6 +142,8 @@ import com.aurora.filemanager.ui.components.GlassFilterChip
 import com.aurora.filemanager.ui.components.GlassSegmentedControl
 import com.aurora.filemanager.ui.components.GlassSkeletonRow
 import com.aurora.filemanager.ui.components.GlassSurface
+import com.aurora.filemanager.ui.components.LazyGridScrollbarPill
+import com.aurora.filemanager.ui.components.LazyListScrollbarPill
 import com.aurora.filemanager.ui.components.categoryAccentColor
 import com.aurora.filemanager.ui.components.categoryIcon
 import com.aurora.filemanager.ui.theme.AuroraPalette
@@ -192,6 +194,7 @@ fun HomeScreen(
     onShowExtensionsChange: (Boolean) -> Unit = {},
     onCleanerLookChange: (Boolean) -> Unit = {},
     onThemeModeChange: (ThemeMode) -> Unit = {},
+    onAmoledModeChange: (Boolean) -> Unit = {},
     // Search callbacks
     onActivateSearch: (Boolean) -> Unit,
     onSearchQueryChange: (String) -> Unit,
@@ -283,6 +286,8 @@ fun HomeScreen(
                         onSortChange = onSortChange,
                         currentThemeMode = preferences.themeMode,
                         onThemeModeChange = onThemeModeChange,
+                        amoledMode = preferences.amoledMode,
+                        onAmoledModeChange = onAmoledModeChange,
                         cleanerLook = preferences.cleanerLook,
                         onCleanerLookChange = onCleanerLookChange,
                         showFileExtensions = preferences.showFileExtensions,
@@ -597,6 +602,8 @@ private fun MainGlassTopBar(
     onSortChange: (SortField, SortOrder) -> Unit,
     currentThemeMode: ThemeMode,
     onThemeModeChange: (ThemeMode) -> Unit,
+    amoledMode: Boolean,
+    onAmoledModeChange: (Boolean) -> Unit,
     cleanerLook: Boolean,
     onCleanerLookChange: (Boolean) -> Unit,
     showFileExtensions: Boolean,
@@ -664,10 +671,12 @@ private fun MainGlassTopBar(
                 currentSortField = currentSortField,
                 currentSortOrder = currentSortOrder,
                 currentThemeMode = currentThemeMode,
+                amoledMode = amoledMode,
                 cleanerLook = cleanerLook,
                 showFileExtensions = showFileExtensions,
                 onSortChange = onSortChange,
                 onThemeModeChange = onThemeModeChange,
+                onAmoledModeChange = onAmoledModeChange,
                 onCleanerLookChange = onCleanerLookChange,
                 onShowExtensionsChange = onShowExtensionsChange,
                 onOpenSaved = onQuickHubClick,
@@ -690,10 +699,12 @@ private fun StorageOverflowDropdownMenu(
     currentSortField: SortField,
     currentSortOrder: SortOrder,
     currentThemeMode: ThemeMode,
+    amoledMode: Boolean,
     cleanerLook: Boolean,
     showFileExtensions: Boolean,
     onSortChange: (SortField, SortOrder) -> Unit,
     onThemeModeChange: (ThemeMode) -> Unit,
+    onAmoledModeChange: (Boolean) -> Unit,
     onCleanerLookChange: (Boolean) -> Unit,
     onShowExtensionsChange: (Boolean) -> Unit,
     onOpenSaved: () -> Unit,
@@ -971,6 +982,13 @@ private fun StorageOverflowDropdownMenu(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     CompactSwitchRow(
+                        title = "AMOLED Mode",
+                        description = "Use pure black backgrounds for a deeper dark theme.",
+                        checked = amoledMode,
+                        onCheckedChange = onAmoledModeChange
+                    )
+
+                    CompactSwitchRow(
                         title = "Cleaner Look",
                         checked = cleanerLook,
                         onCheckedChange = onCleanerLookChange
@@ -990,6 +1008,7 @@ private fun StorageOverflowDropdownMenu(
 @Composable
 private fun CompactSwitchRow(
     title: String,
+    description: String? = null,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
@@ -1002,11 +1021,20 @@ private fun CompactSwitchRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyMedium,
-            color = colors.textPrimary
-        )
+        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                color = colors.textPrimary
+            )
+            if (!description.isNullOrBlank()) {
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = colors.textSecondary
+                )
+            }
+        }
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
@@ -1613,94 +1641,98 @@ internal fun GroupedFilesViewport(
 ) {
     val colors = AuroraTheme.colors
 
-    if (viewMode == ViewMode.LIST) {
-        LazyColumn(
-            state = listState,
-            contentPadding = PaddingValues(bottom = 110.dp),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            groups.forEach { group ->
-                if (group.title.isNotEmpty()) {
-                    item(key = "header_${group.title}") {
-                        Text(
-                            text = "${group.title.uppercase()} (${group.items.size})",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = colors.accentSecondary,
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (viewMode == ViewMode.LIST) {
+            LazyColumn(
+                state = listState,
+                contentPadding = PaddingValues(bottom = 110.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                groups.forEach { group ->
+                    if (group.title.isNotEmpty()) {
+                        item(key = "header_${group.title}") {
+                            Text(
+                                text = "${group.title.uppercase()} (${group.items.size})",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = colors.accentSecondary,
+                                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                            )
+                        }
+                    }
+                    items(
+                        items = group.items,
+                        key = { it.path },
+                        contentType = { it.category.name }
+                    ) { item ->
+                        val isCurrentlyPlaying = currentPlayingPath != null && File(currentPlayingPath).absolutePath == File(item.path).absolutePath
+                        FileListRow(
+                            item = item,
+                            isSelected = item.path in selectedPaths,
+                            inSelectionMode = inSelectionMode,
+                            showExtension = showExtension,
+                            enableThumbnails = enableThumbnails,
+                            showAddedTimestamp = showAddedTimestamp,
+                            cleanerLook = cleanerLook,
+                            isCurrentlyPlaying = isCurrentlyPlaying,
+                            isPlayingState = isAudioPlaying,
+                            overlayBadgeText = overlayBadgeProvider?.invoke(item),
+                            overlayBadgeColor = overlayBadgeColorProvider?.invoke(item),
+                            onClick = { onFileClick(item, flatItems) },
+                            onLongClick = { onFileLongClick(item) },
+                            onMoreClick = { rect -> onFileMoreClick(item, rect) }
                         )
                     }
                 }
-                items(
-                    items = group.items,
-                    key = { it.path },
-                    contentType = { it.category.name }
-                ) { item ->
-                    val isCurrentlyPlaying = currentPlayingPath != null && File(currentPlayingPath).absolutePath == File(item.path).absolutePath
-                    FileListRow(
-                        item = item,
-                        isSelected = item.path in selectedPaths,
-                        inSelectionMode = inSelectionMode,
-                        showExtension = showExtension,
-                        enableThumbnails = enableThumbnails,
-                        showAddedTimestamp = showAddedTimestamp,
-                        cleanerLook = cleanerLook,
-                        isCurrentlyPlaying = isCurrentlyPlaying,
-                        isPlayingState = isAudioPlaying,
-                        overlayBadgeText = overlayBadgeProvider?.invoke(item),
-                        overlayBadgeColor = overlayBadgeColorProvider?.invoke(item),
-                        onClick = { onFileClick(item, flatItems) },
-                        onLongClick = { onFileLongClick(item) },
-                        onMoreClick = { rect -> onFileMoreClick(item, rect) }
-                    )
-                }
             }
-        }
-    } else {
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(gridColumns.coerceIn(2, 5)),
-            state = gridState,
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 110.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            groups.forEach { group ->
-                if (group.title.isNotEmpty()) {
-                    item(
-                        key = "grid_header_${group.title}",
-                        span = { GridItemSpan(maxLineSpan) }
-                    ) {
-                        Text(
-                            text = "${group.title.uppercase()} (${group.items.size})",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = colors.accentSecondary,
-                            modifier = Modifier.padding(vertical = 6.dp)
+            LazyListScrollbarPill(listState = listState)
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(gridColumns.coerceIn(2, 5)),
+                state = gridState,
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 110.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                groups.forEach { group ->
+                    if (group.title.isNotEmpty()) {
+                        item(
+                            key = "grid_header_${group.title}",
+                            span = { GridItemSpan(maxLineSpan) }
+                        ) {
+                            Text(
+                                text = "${group.title.uppercase()} (${group.items.size})",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = colors.accentSecondary,
+                                modifier = Modifier.padding(vertical = 6.dp)
+                            )
+                        }
+                    }
+                    items(
+                        items = group.items,
+                        key = { it.path },
+                        contentType = { it.category.name }
+                    ) { item ->
+                        val isCurrentlyPlaying = currentPlayingPath != null && File(currentPlayingPath).absolutePath == File(item.path).absolutePath
+                        FileGridCard(
+                            item = item,
+                            isSelected = item.path in selectedPaths,
+                            inSelectionMode = inSelectionMode,
+                            showExtension = showExtension,
+                            enableThumbnails = enableThumbnails,
+                            cleanerLook = cleanerLook,
+                            isCurrentlyPlaying = isCurrentlyPlaying,
+                            isPlayingState = isAudioPlaying,
+                            overlayBadgeText = overlayBadgeProvider?.invoke(item),
+                            overlayBadgeColor = overlayBadgeColorProvider?.invoke(item),
+                            onClick = { onFileClick(item, flatItems) },
+                            onLongClick = { onFileLongClick(item) },
+                            onMoreClick = { rect -> onFileMoreClick(item, rect) }
                         )
                     }
                 }
-                items(
-                    items = group.items,
-                    key = { it.path },
-                    contentType = { it.category.name }
-                ) { item ->
-                    val isCurrentlyPlaying = currentPlayingPath != null && File(currentPlayingPath).absolutePath == File(item.path).absolutePath
-                    FileGridCard(
-                        item = item,
-                        isSelected = item.path in selectedPaths,
-                        inSelectionMode = inSelectionMode,
-                        showExtension = showExtension,
-                        enableThumbnails = enableThumbnails,
-                        cleanerLook = cleanerLook,
-                        isCurrentlyPlaying = isCurrentlyPlaying,
-                        isPlayingState = isAudioPlaying,
-                        overlayBadgeText = overlayBadgeProvider?.invoke(item),
-                        overlayBadgeColor = overlayBadgeColorProvider?.invoke(item),
-                        onClick = { onFileClick(item, flatItems) },
-                        onLongClick = { onFileLongClick(item) },
-                        onMoreClick = { rect -> onFileMoreClick(item, rect) }
-                    )
-                }
             }
+            LazyGridScrollbarPill(gridState = gridState, gridColumns = gridColumns)
         }
     }
 }
@@ -1753,27 +1785,32 @@ private fun SearchResultsContent(
                 color = colors.textSecondary,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
             )
-            LazyColumn(
-                contentPadding = PaddingValues(bottom = 110.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(results, key = { it.path }) { item ->
-                    val isCurrentlyPlaying = currentPlayingPath != null && File(currentPlayingPath).absolutePath == File(item.path).absolutePath
-                    FileListRow(
-                        item = item,
-                        isSelected = item.path in selectedPaths,
-                        inSelectionMode = inSelectionMode,
-                        showExtension = showExtension,
-                        enableThumbnails = enableThumbnails,
-                        showAddedTimestamp = false,
-                        highlightQuery = query,
-                        isCurrentlyPlaying = isCurrentlyPlaying,
-                        isPlayingState = isAudioPlaying,
-                        onClick = { onFileClick(item) },
-                        onLongClick = { onFileLongClick(item) },
-                        onMoreClick = { rect -> onFileMoreClick(item, rect) }
-                    )
+            val searchListState = rememberLazyListState()
+            Box(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    state = searchListState,
+                    contentPadding = PaddingValues(bottom = 110.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(results, key = { it.path }) { item ->
+                        val isCurrentlyPlaying = currentPlayingPath != null && File(currentPlayingPath).absolutePath == File(item.path).absolutePath
+                        FileListRow(
+                            item = item,
+                            isSelected = item.path in selectedPaths,
+                            inSelectionMode = inSelectionMode,
+                            showExtension = showExtension,
+                            enableThumbnails = enableThumbnails,
+                            showAddedTimestamp = false,
+                            highlightQuery = query,
+                            isCurrentlyPlaying = isCurrentlyPlaying,
+                            isPlayingState = isAudioPlaying,
+                            onClick = { onFileClick(item) },
+                            onLongClick = { onFileLongClick(item) },
+                            onMoreClick = { rect -> onFileMoreClick(item, rect) }
+                        )
+                    }
                 }
+                LazyListScrollbarPill(listState = searchListState)
             }
         }
     }

@@ -123,6 +123,7 @@ fun ViewAndSortBottomSheet(
     showHiddenFiles: Boolean,
     cleanerLook: Boolean,
     currentThemeMode: ThemeMode,
+    amoledMode: Boolean = false,
     onViewModeChange: (ViewMode) -> Unit,
     onGridColumnsChange: (Int) -> Unit,
     onSortChange: (SortField, SortOrder) -> Unit,
@@ -131,6 +132,7 @@ fun ViewAndSortBottomSheet(
     onShowHiddenChange: (Boolean) -> Unit,
     onCleanerLookChange: (Boolean) -> Unit,
     onThemeModeChange: (ThemeMode) -> Unit,
+    onAmoledModeChange: (Boolean) -> Unit = {},
     onDismiss: () -> Unit
 ) {
     val colors = AuroraTheme.colors
@@ -332,6 +334,14 @@ fun ViewAndSortBottomSheet(
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(10.dp))
+            PreferenceSwitchRow(
+                title = "AMOLED Mode",
+                subtitle = "Use pure black backgrounds for a deeper dark theme.",
+                checked = amoledMode,
+                onCheckedChange = onAmoledModeChange
+            )
         }
     }
 }

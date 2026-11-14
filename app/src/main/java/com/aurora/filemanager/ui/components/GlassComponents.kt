@@ -32,6 +32,10 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -42,12 +46,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -109,30 +115,35 @@ fun AuroraAmbientBackground(
     content: @Composable BoxScope.() -> Unit
 ) {
     val colors = AuroraTheme.colors
+    val isAmoled = colors.isDark && colors.backgroundPrimary == Color(0xFF000000)
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(colors.backgroundPrimary)
             .drawWithCache {
-                val topGlow = Brush.radialGradient(
-                    colors = listOf(
-                        colors.accentPrimary.copy(alpha = if (colors.isDark) 0.16f else 0.08f),
-                        Color.Transparent
-                    ),
-                    center = Offset(size.width * 0.85f, size.height * 0.08f),
-                    radius = size.width * 0.75f
-                )
-                val bottomGlow = Brush.radialGradient(
-                    colors = listOf(
-                        colors.accentSecondary.copy(alpha = if (colors.isDark) 0.12f else 0.06f),
-                        Color.Transparent
-                    ),
-                    center = Offset(size.width * 0.15f, size.height * 0.85f),
-                    radius = size.width * 0.75f
-                )
-                onDrawBehind {
-                    drawRect(topGlow)
-                    drawRect(bottomGlow)
+                if (isAmoled) {
+                    onDrawBehind { }
+                } else {
+                    val topGlow = Brush.radialGradient(
+                        colors = listOf(
+                            colors.accentPrimary.copy(alpha = if (colors.isDark) 0.16f else 0.08f),
+                            Color.Transparent
+                        ),
+                        center = Offset(size.width * 0.85f, size.height * 0.08f),
+                        radius = size.width * 0.75f
+                    )
+                    val bottomGlow = Brush.radialGradient(
+                        colors = listOf(
+                            colors.accentSecondary.copy(alpha = if (colors.isDark) 0.12f else 0.06f),
+                            Color.Transparent
+                        ),
+                        center = Offset(size.width * 0.15f, size.height * 0.85f),
+                        radius = size.width * 0.75f
+                    )
+                    onDrawBehind {
+                        drawRect(topGlow)
+                        drawRect(bottomGlow)
+                    }
                 }
             },
         content = content
@@ -456,6 +467,149 @@ fun GlassSkeletonRow(modifier: Modifier = Modifier) {
                     .height(10.dp)
                     .clip(AuroraRadius.ExtraSmall)
                     .background(colors.glassBorder.copy(alpha = 0.5f))
+            )
+        }
+    }
+}
+
+private data class ScrollPillState(
+    val scrollFraction: Float,
+    val heightFraction: Float,
+    val isScrolling: Boolean
+)
+
+/**
+ * Lightweight, precise, non-glitchy floating scrollbar pill for LazyColumn lists.
+ * Renders a minimal, modern pill without any casing, line, track, or background container.
+ * Auto-fades smoothly when scrolling stops.
+ */
+@Composable
+fun LazyListScrollbarPill(
+    listState: LazyListState,
+    modifier: Modifier = Modifier
+) {
+    val scrollInfo by remember(listState) {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val totalItems = layoutInfo.totalItemsCount
+            val visibleItems = layoutInfo.visibleItemsInfo
+            if (totalItems == 0 || visibleItems.isEmpty()) return@derivedStateOf null
+
+            val visibleCount = visibleItems.size
+            if (visibleCount >= totalItems) return@derivedStateOf null
+
+            val firstIndex = listState.firstVisibleItemIndex
+            val offset = listState.firstVisibleItemScrollOffset
+            
+            val avgItemSize = visibleItems.sumOf { it.size }.toFloat() / visibleCount
+            val exactIndex = firstIndex + (offset / avgItemSize)
+            val maxIndex = (totalItems - visibleCount).toFloat()
+            val scrollFraction = if (maxIndex > 0f) (exactIndex / maxIndex).coerceIn(0f, 1f) else 0f
+
+            val heightFraction = (visibleCount.toFloat() / totalItems.toFloat()).coerceIn(0.05f, 0.8f)
+            val isScrolling = listState.isScrollInProgress
+
+            ScrollPillState(scrollFraction, heightFraction, isScrolling)
+        }
+    }
+
+    val info = scrollInfo ?: return
+    val alpha by animateFloatAsState(
+        targetValue = if (info.isScrolling) 0.35f else 0.0f,
+        animationSpec = tween(durationMillis = if (info.isScrolling) 150 else 600),
+        label = "listScrollbarAlpha"
+    )
+
+    if (alpha > 0.01f) {
+        val scrollColor = if (AuroraTheme.colors.isDark) Color.White.copy(alpha = alpha) else Color.Black.copy(alpha = alpha)
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(end = 4.dp, top = 8.dp, bottom = 8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .graphicsLayer {
+                        val parentHeight = size.height / info.heightFraction
+                        val availableSpace = parentHeight - size.height
+                        translationY = availableSpace * info.scrollFraction
+                    }
+                    .width(4.dp)
+                    .fillMaxHeight(info.heightFraction)
+                    .clip(CircleShape)
+                    .background(scrollColor)
+            )
+        }
+    }
+}
+
+/**
+ * Lightweight, precise, non-glitchy floating scrollbar pill for LazyVerticalGrid.
+ * Renders a minimal, modern pill without any casing, line, track, or background container.
+ * Auto-fades smoothly when scrolling stops.
+ */
+@Composable
+fun LazyGridScrollbarPill(
+    gridState: LazyGridState,
+    gridColumns: Int,
+    modifier: Modifier = Modifier
+) {
+    val scrollInfo by remember(gridState, gridColumns) {
+        derivedStateOf {
+            val layoutInfo = gridState.layoutInfo
+            val totalItems = layoutInfo.totalItemsCount
+            val visibleItems = layoutInfo.visibleItemsInfo
+            if (totalItems == 0 || visibleItems.isEmpty()) return@derivedStateOf null
+
+            val columns = gridColumns.coerceAtLeast(1)
+            val totalRows = (totalItems + columns - 1) / columns
+            val firstVisible = visibleItems.first()
+            val firstRowIndex = firstVisible.index / columns
+            val lastRowIndex = visibleItems.last().index / columns
+            val visibleRows = (lastRowIndex - firstRowIndex + 1).coerceAtLeast(1)
+
+            if (visibleRows >= totalRows) return@derivedStateOf null
+
+            val offset = gridState.firstVisibleItemScrollOffset
+            val avgRowSize = visibleItems.sumOf { it.size.height }.toFloat() / visibleItems.size
+            val exactRowIndex = firstRowIndex + (offset / avgRowSize)
+            val maxRowIndex = (totalRows - visibleRows).toFloat()
+            val scrollFraction = if (maxRowIndex > 0f) (exactRowIndex / maxRowIndex).coerceIn(0f, 1f) else 0f
+
+            val heightFraction = (visibleRows.toFloat() / totalRows.toFloat()).coerceIn(0.05f, 0.8f)
+            val isScrolling = gridState.isScrollInProgress
+
+            ScrollPillState(scrollFraction, heightFraction, isScrolling)
+        }
+    }
+
+    val info = scrollInfo ?: return
+    val alpha by animateFloatAsState(
+        targetValue = if (info.isScrolling) 0.35f else 0.0f,
+        animationSpec = tween(durationMillis = if (info.isScrolling) 150 else 600),
+        label = "gridScrollbarAlpha"
+    )
+
+    if (alpha > 0.01f) {
+        val scrollColor = if (AuroraTheme.colors.isDark) Color.White.copy(alpha = alpha) else Color.Black.copy(alpha = alpha)
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(end = 4.dp, top = 8.dp, bottom = 8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .graphicsLayer {
+                        val parentHeight = size.height / info.heightFraction
+                        val availableSpace = parentHeight - size.height
+                        translationY = availableSpace * info.scrollFraction
+                    }
+                    .width(4.dp)
+                    .fillMaxHeight(info.heightFraction)
+                    .clip(CircleShape)
+                    .background(scrollColor)
             )
         }
     }

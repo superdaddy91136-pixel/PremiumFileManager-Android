@@ -13,6 +13,8 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
+import androidx.compose.ui.graphics.Color
+
 enum class ThemeMode {
     DARK,
     LIGHT,
@@ -36,6 +38,21 @@ private val MaterialDarkScheme = darkColorScheme(
     error = AuroraPalette.DangerCrimson
 )
 
+private val MaterialAmoledScheme = darkColorScheme(
+    primary = AuroraPalette.DeepIndigo,
+    onPrimary = Color.White,
+    secondary = AuroraPalette.OceanBlue,
+    onSecondary = Color.White,
+    tertiary = AuroraPalette.CyanHighlight,
+    background = Color(0xFF000000),
+    onBackground = Color.White,
+    surface = Color(0xFF0C0C0C),
+    onSurface = Color.White,
+    surfaceVariant = Color(0xFF161616),
+    onSurfaceVariant = AuroraPalette.TextSecondaryDark,
+    error = AuroraPalette.DangerCrimson
+)
+
 private val MaterialLightScheme = lightColorScheme(
     primary = AuroraPalette.DeepIndigo,
     onPrimary = AuroraPalette.PearlSurface,
@@ -54,6 +71,7 @@ private val MaterialLightScheme = lightColorScheme(
 @Composable
 fun AuroraFileManagerTheme(
     themeMode: ThemeMode = ThemeMode.DARK,
+    amoledMode: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val useDarkTheme = when (themeMode) {
@@ -62,8 +80,16 @@ fun AuroraFileManagerTheme(
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
     }
 
-    val auroraColors = if (useDarkTheme) DarkAuroraGlassColors else LightAuroraGlassColors
-    val materialScheme = if (useDarkTheme) MaterialDarkScheme else MaterialLightScheme
+    val auroraColors = when {
+        useDarkTheme && amoledMode -> AmoledAuroraGlassColors
+        useDarkTheme -> DarkAuroraGlassColors
+        else -> LightAuroraGlassColors
+    }
+    val materialScheme = when {
+        useDarkTheme && amoledMode -> MaterialAmoledScheme
+        useDarkTheme -> MaterialDarkScheme
+        else -> MaterialLightScheme
+    }
 
     val view = LocalView.current
     if (!view.isInEditMode) {

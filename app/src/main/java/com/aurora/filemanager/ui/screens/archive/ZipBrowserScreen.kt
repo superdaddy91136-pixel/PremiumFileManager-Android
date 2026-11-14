@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -47,9 +46,12 @@ import com.aurora.filemanager.ui.components.itemCard3DStyle
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.aurora.filemanager.data.model.FileCategory
 import com.aurora.filemanager.data.model.FileItem
 import com.aurora.filemanager.ui.components.AuroraAmbientBackground
 import com.aurora.filemanager.ui.components.GlassSurface
+import com.aurora.filemanager.ui.components.fileTypeColor
+import com.aurora.filemanager.ui.components.fileTypeOutlineIcon
 import com.aurora.filemanager.ui.theme.AuroraPalette
 import com.aurora.filemanager.ui.theme.AuroraRadius
 import com.aurora.filemanager.ui.theme.AuroraTheme
@@ -201,18 +203,12 @@ fun ZipBrowserScreen(
                                         .padding(horizontal = 12.dp, vertical = 10.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    val ext = entry.entryPath.substringAfterLast('.', "").lowercase()
+                                    val cat = FileCategory.fromFile(entry.isDirectory, ext, null)
                                     Icon(
-                                        imageVector = if (entry.isDirectory) {
-                                            Icons.Outlined.Folder
-                                        } else {
-                                            Icons.Outlined.InsertDriveFile
-                                        },
+                                        imageVector = fileTypeOutlineIcon(cat),
                                         contentDescription = null,
-                                        tint = if (entry.isDirectory) {
-                                            AuroraPalette.CategoryArchive
-                                        } else {
-                                            AuroraPalette.OceanBlue
-                                        },
+                                        tint = fileTypeColor(cat),
                                         modifier = Modifier.size(26.dp)
                                     )
                                     Spacer(modifier = Modifier.width(12.dp))

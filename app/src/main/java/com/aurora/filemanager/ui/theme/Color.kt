@@ -111,6 +111,28 @@ val DarkAuroraGlassColors = AuroraGlassColors(
     success = AuroraPalette.SuccessEmerald
 )
 
+val AmoledAuroraGlassColors = AuroraGlassColors(
+    isDark = true,
+    backgroundPrimary = Color(0xFF000000),             // Pure Black for AMOLED
+    backgroundSecondary = Color(0xFF0A0D14),           // Faded dark black/grey
+    rowSurface = Color(0xFF12141C),                    // Dark grey card surface for subtle distinction
+    glassSurface = Color(0xF00C0E14),                  // Translucent dark glass
+    glassElevated = Color(0xF5161820),                 // Differentiated dark grey for elevated sheets, menus & dialogs
+    glassInteractive = Color(0xCC20222A),              // Interactive chips
+    glassSelected = Color(0x404F46E5),                 // Indigo tint selection
+    glassBorder = Color(0x33FFFFFF),                   // 20% white specular border
+    glassBorderSelected = AuroraPalette.OceanBlue.copy(alpha = 0.70f),
+    glassHighlight = Color(0x1AFFFFFF),
+    accentPrimary = AuroraPalette.DeepIndigo,
+    accentSecondary = AuroraPalette.OceanBlue,
+    textPrimary = Color(0xFFFFFFFF),                   // Pure white text for legibility
+    textSecondary = Color(0xFFA0AEC0),
+    textMuted = Color(0xFF718096),
+    danger = AuroraPalette.DangerCrimson,
+    warning = AuroraPalette.WarningAmber,
+    success = AuroraPalette.SuccessEmerald
+)
+
 val LightAuroraGlassColors = AuroraGlassColors(
     isDark = false,
     backgroundPrimary = AuroraPalette.AlabasterBg,

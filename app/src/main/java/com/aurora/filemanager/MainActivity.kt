@@ -65,9 +65,26 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        val preferences = viewModel.preferencesFlow.value
+        
+        // Dynamically set window background to match the saved theme to prevent any XML-theme bleed-through
+        val isSystemDark = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        val windowBgColor = when {
+            preferences.themeMode == com.aurora.filemanager.ui.theme.ThemeMode.LIGHT || 
+            (preferences.themeMode == com.aurora.filemanager.ui.theme.ThemeMode.SYSTEM && !isSystemDark) -> {
+                android.graphics.Color.parseColor("#FFF3F6FA") // AlabasterBg
+            }
+            preferences.amoledMode -> android.graphics.Color.BLACK
+            else -> android.graphics.Color.parseColor("#FF080A0F") // MatteObsidian
+        }
+        window.decorView.setBackgroundColor(windowBgColor)
+
         setContent {
-            val preferences by viewModel.preferencesFlow.collectAsState()
-            AuroraFileManagerTheme(themeMode = preferences.themeMode) {
+            val statePreferences by viewModel.preferencesFlow.collectAsState()
+            AuroraFileManagerTheme(
+                themeMode = statePreferences.themeMode,
+                amoledMode = statePreferences.amoledMode
+            ) {
                 AuroraFileManagerApp(viewModel = viewModel)
             }
         }
@@ -227,6 +244,7 @@ fun AuroraFileManagerApp(viewModel: FileManagerViewModel) {
                         onShowExtensionsChange = viewModel::setShowFileExtensions,
                         onCleanerLookChange = viewModel::setCleanerLook,
                         onThemeModeChange = viewModel::setThemeMode,
+                        onAmoledModeChange = viewModel::setAmoledMode,
                     onActivateSearch = viewModel::setSearchActive,
                     onSearchQueryChange = viewModel::updateSearchQuery,
                     onToggleSearchCurrentFolder = viewModel::toggleSearchScopeCurrentFolder,
@@ -447,6 +465,7 @@ fun AuroraFileManagerApp(viewModel: FileManagerViewModel) {
             showHiddenFiles = preferences.showHiddenFiles,
             cleanerLook = preferences.cleanerLook,
             currentThemeMode = preferences.themeMode,
+            amoledMode = preferences.amoledMode,
             onViewModeChange = viewModel::setViewMode,
             onGridColumnsChange = viewModel::setGridColumns,
             onSortChange = viewModel::setSort,
@@ -455,6 +474,7 @@ fun AuroraFileManagerApp(viewModel: FileManagerViewModel) {
             onShowHiddenChange = viewModel::setShowHiddenFiles,
             onCleanerLookChange = viewModel::setCleanerLook,
             onThemeModeChange = viewModel::setThemeMode,
+            onAmoledModeChange = viewModel::setAmoledMode,
             onDismiss = { showViewSortSheet = false }
         )
     }
